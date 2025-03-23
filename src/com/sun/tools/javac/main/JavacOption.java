@@ -72,8 +72,11 @@ public interface JavacOption {
     OptionName getName();
 
     enum OptionKind {
+        // 标准选项
         NORMAL,
+        // 扩展选项
         EXTENDED,
+        // 内部使用选项
         HIDDEN,
     }
 
@@ -249,7 +252,7 @@ public interface JavacOption {
             else
                 return process(options, option, option);
         }
-
+        // option代表标准选项, 所以这里返回normal
         public OptionKind getKind() { return OptionKind.NORMAL; }
 
         public OptionName getName() { return name; }

@@ -335,6 +335,7 @@ public class RecognizedOptions {
                 Option.ChoiceKind.ONEOF, "none", "only"),
         new Option(PROCESSOR,           "opt.arg.class.list",   "opt.processor"),
         new Option(PROCESSORPATH,       "opt.arg.path",         "opt.processorpath"),
+        // -d 参数的实现
         new Option(D,                   "opt.arg.directory",    "opt.d"),
         new Option(S,                   "opt.arg.directory",    "opt.sourceDest"),
         new Option(IMPLICIT,                                    "opt.implicit",
@@ -589,6 +590,7 @@ public class RecognizedOptions {
          * In apt, the process method adds the candidate class file
          * name to a separate list.
          */
+         // sourfile命令的匿名类实现
         new HiddenOption(SOURCEFILE) {
             String s;
             @Override

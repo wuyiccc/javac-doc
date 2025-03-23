@@ -214,6 +214,14 @@ public class Main {
                 // quick hack to speed up file processing:
                 // if the option does not begin with '-', there is no need to check
                 // most of the compiler options.
+                // 由于命令一般都是以-开头的, 如果以-开头, 就循环recognizedOptions数组查找,
+                // 找到对应的option后调用process()方法执行具体的命令, 如果不以-开头, 例如path参数, 则直接查找recognizedOptions数组中最后一项
+                // 即sourcefile命令, 执行sourcefile后会调用helper的addfile方法, 而helper的addFile方法会将需要编译的java源文件路径追加到filenames中
+                // 这样processArgs方法执行完成之后以列表的形式返回filenames, javac会对filenames列表中指定的源文件进行编译
+                //       int result = compiler.run(null, null, null, new String[] {
+                //                "-d", "/root/work/javac-doc/src/test",
+                //                path
+                //        });
                 int firstOptionToCheck = flag.charAt(0) == '-' ? 0 : recognizedOptions.length-1;
                 for (int j=firstOptionToCheck; j<recognizedOptions.length; j++) {
                     if (recognizedOptions[j].matches(flag)) {
