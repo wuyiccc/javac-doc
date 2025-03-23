@@ -11,11 +11,11 @@ public class TestCompiler {
 
     public static void main(String[] args) {
 
-        String path = "/Users/wuxingyu/work/code_learn/032-sourcecode/08-sourcecode-jdk/javac-doc/src/test/TestJavac.java";
+        String path = "/root/work/javac-doc/src/test/TestJavac.java";
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 
         int result = compiler.run(null, null, null, new String[] {
-                "-d", "/Users/wuxingyu/work/code_learn/032-sourcecode/08-sourcecode-jdk/javac-doc/src/test",
+                "-d", "/root/work/javac-doc/src/test",
                 path
         });
 
