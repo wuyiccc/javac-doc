@@ -279,6 +279,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
                                Set<JavaFileObject.Kind> fileKinds,
                                boolean recurse,
                                ListBuffer<JavaFileObject> resultList) {
+        // 拼接为绝对路径
         File d = subdirectory.getFile(directory);
         if (!caseMapCheck(d, subdirectory))
             return;
@@ -293,6 +294,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
         for (File f: files) {
             String fname = f.getName();
             if (f.isDirectory()) {
+                // 对目录的处理逻辑 recurse为true, 且fname是一个合法的文件名
                 if (recurse && SourceVersion.isIdentifier(fname)) {
                     listDirectory(directory,
                                   new RelativeDirectory(subdirectory, fname),
@@ -301,6 +303,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
                                   resultList);
                 }
             } else {
+                // 对文件的处理逻辑
                 if (isValidFile(fname, fileKinds)) {
                     JavaFileObject fe =
                         new RegularFileObject(this, fname, new File(d, fname));
@@ -320,6 +323,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
                                boolean recurse,
                                ListBuffer<JavaFileObject> resultList) {
         // Get the files directly in the subdir
+        // 获取subdirectory路径下的所有文件并追加到resultList列表中
         List<String> files = archive.getFiles(subdirectory);
         if (files != null) {
             for (; !files.isEmpty(); files = files.tail) {
@@ -329,6 +333,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
                 }
             }
         }
+        // 获取subdirectory及subdirectory目录的所有直接或间接子目录下的文件, 并追加到resultList列表中
         if (recurse) {
             for (RelativeDirectory s: archive.getSubdirectories()) {
                 if (subdirectory.contains(s)) {
@@ -354,7 +359,9 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
         Archive archive = archives.get(container);
         if (archive == null) {
             // archives are not created for directories.
+            // 如果container是目录, 就调用listDirectory方法进行处理
             if  (fsInfo.isDirectory(container)) {
+                // 获取目录中满足要求的文件并追加到resultList列表中
                 listDirectory(container,
                               subdirectory,
                               fileKinds,
@@ -365,6 +372,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
 
             // Not a directory; either a file or non-existant, create the archive
             try {
+                // container是压缩包
                 archive = openArchive(container);
             } catch (IOException ex) {
                 log.error("error.reading.file",
@@ -372,6 +380,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
                 return;
             }
         }
+        // 获取压缩包中满足要求的文件并追加到resultList列表中
         listArchive(archive,
                     subdirectory,
                     fileKinds,
@@ -465,6 +474,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
 
     /** A directory of zip files already opened.
      */
+     // 缓存已经被加载过的压缩包
     Map<File, Archive> archives = new HashMap<File,Archive>();
 
     private static final String[] symbolFileLocation = { "lib", "ct.sym" };
@@ -493,6 +503,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
      */
     private Archive openArchive(File zipFileName, boolean useOptimizedZip) throws IOException {
         File origZipFileName = zipFileName;
+        // 根据rt.jar包的绝对路径找到ct.sym包的绝对路径
         if (!ignoreSymbolFile && paths.isDefaultBootClassPathRtJar(zipFileName)) {
             File file = zipFileName.getParentFile().getParentFile(); // ${java.home}
             if (new File(file.getName()).equals(new File("jre")))
@@ -625,7 +636,9 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
     }
 
     public Iterable<JavaFileObject> list(Location location,
+                                         // 指定查找包路径
                                          String packageName,
+                                         // 指定查找文件类型
                                          Set<JavaFileObject.Kind> kinds,
                                          boolean recurse)
         throws IOException
@@ -633,7 +646,7 @@ public class JavacFileManager extends BaseFileManager implements StandardJavaFil
         // validatePackageName(packageName);
         nullCheck(packageName);
         nullCheck(kinds);
-
+        // 获取到相关location下的所有file对象,
         Iterable<? extends File> path = getLocation(location);
         if (path == null)
             return List.nil();

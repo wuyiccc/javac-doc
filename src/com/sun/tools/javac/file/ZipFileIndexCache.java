@@ -96,6 +96,7 @@ public class ZipFileIndexCache {
             boolean writeIndex) throws IOException {
         ZipFileIndex zi = getExistingZipIndex(zipFile);
 
+        // 如果ZipFileIndex对象不存在或者文件内容已经更新, 则创建一个新的ZipFileIndex对象
         if (zi == null || (zi != null && zipFile.lastModified() != zi.zipFileLastModified)) {
             zi = new ZipFileIndex(zipFile, symbolFilePrefix, writeIndex,
                     useCache, cacheLocation);
