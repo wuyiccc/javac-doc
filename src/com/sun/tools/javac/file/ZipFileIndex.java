@@ -85,12 +85,14 @@ public class ZipFileIndex {
 
     private static boolean NON_BATCH_MODE = System.getProperty("nonBatchMode") != null;// TODO: Use -XD compiler switch for this.
 
+    // 保存了压缩包中相对路径到DirectoryEntry对象的映射关系, DirectoryEntry类是ZipFileIndex类中定义的一个静态内部类, 表示具体的目录
     private Map<RelativeDirectory, DirectoryEntry> directories =
             Collections.<RelativeDirectory, DirectoryEntry>emptyMap();
     private Set<RelativeDirectory> allDirs =
             Collections.<RelativeDirectory>emptySet();
 
     // ZipFileIndex data entries
+    // 保存要读取的压缩包
     final File zipFile;
     private Reference<File> absFileRef;
     long zipFileLastModified = NOT_MODIFIED;
@@ -162,6 +164,7 @@ public class ZipFileIndex {
      * Here we need to make sure that the ZipFileIndex is valid. Check the timestamp of the file and
      * if its the same as the one at the time the index was build we don't need to reopen anything.
      */
+     // 读取压缩包相关的内容
     private void checkIndex() throws IOException {
         boolean isUpToDate = true;
         if (!isUpToDate()) {
@@ -185,9 +188,11 @@ public class ZipFileIndex {
         allDirs = Collections.<RelativeDirectory>emptySet();
 
         try {
+            // 初始化zipRandomFile变量
             openFile();
             long totalLength = zipRandomFile.length();
             ZipDirectory directory = new ZipDirectory(zipRandomFile, 0L, totalLength, this);
+            // 为压缩包建立读取索引
             directory.buildIndex();
         } finally {
             if (zipRandomFile != null) {
@@ -200,6 +205,9 @@ public class ZipFileIndex {
 
     private void openFile() throws FileNotFoundException {
         if (zipRandomFile == null && zipFile != null) {
+            if (zipFile.getAbsolutePath().equals("/root/work/javac-doc/lib/mysql-binlog-connector-java-0.25.3.jar")) {
+                System.out.println("yes amd");
+            }
             zipRandomFile = new RandomAccessFile(zipFile, "r");
         }
     }
@@ -229,6 +237,7 @@ public class ZipFileIndex {
 
     /**
      * Returns the ZipFileIndexEntry for a path, if there is one.
+     * 通过相对路径查找文件
      */
     synchronized Entry getZipIndexEntry(RelativePath path) {
         try {
@@ -244,6 +253,8 @@ public class ZipFileIndex {
 
     /**
      * Returns a javac List of filenames within a directory in the ZipFileIndex.
+     *
+     * 通过相对路径path查找所有的文件, 以列表的形式返回所有文件的名称
      */
     public synchronized com.sun.tools.javac.util.List<String> getFiles(RelativeDirectory path) {
         try {
@@ -479,7 +490,8 @@ public class ZipFileIndex {
     /* ----------------------------------------------------------------------------
      * ZipDirectory
      * ----------------------------------------------------------------------------*/
-
+    // ZipDirectory类是ZipFileIndex类定义的一个私有成员类, 这个类中的相关方法将按照压缩包的格式从zipRandomFile中读取压缩包中的目录和文件,
+    // 然后保存到ZipFileIndex类中的一个全局私有的变量entries中, 供其他方法查询
     private class ZipDirectory {
         private RelativeDirectory lastDir;
         private int lastStart;
@@ -537,6 +549,7 @@ public class ZipFileIndex {
                 zipRandomFile.seek(start + endbufpos);
                 zipRandomFile.readFully(endbuf, 0, endbuflen);
                 int i = endbuflen - 22;
+                // 让i指向end of central directory record中 signature(签名)的第一个字节位置
                 while (i >= 0 &&
                         !(endbuf[i] == 0x50 &&
                         endbuf[i + 1] == 0x4b &&
@@ -546,9 +559,12 @@ public class ZipFileIndex {
                         get2ByteLittleEndian(endbuf, i + 20) == totalLength)) {
                     i--;
                 }
-
+                // 此时的i已经指向了end of central directory record 中 signature(签名)的第一个字节位置
                 if (i >= 0) {
+                    // get4ByteLittleEndian 得到central directory的字节数大小, 由于要留2字节保存file header的数量, 所以要+2
+                    // central directory size占用4字节, 所以是get4Byte
                     zipDir = new byte[get4ByteLittleEndian(endbuf, i + 12) + 2];
+                    // 读取file header数量(total entries的大小)
                     zipDir[0] = endbuf[i + 10];
                     zipDir[1] = endbuf[i + 11];
                     int sz = get4ByteLittleEndian(endbuf, i + 16);
@@ -558,6 +574,7 @@ public class ZipFileIndex {
                         throw new ZipFormatException("detected a zip64 archive");
                     }
                     zipRandomFile.seek(start + sz);
+                    // 读取所有file header的内容并保存到zip dir 数组中(zip压缩包central directory 中的 file header)
                     zipRandomFile.readFully(zipDir, 2, zipDir.length - 2);
                     return;
                 } else {
@@ -568,6 +585,7 @@ public class ZipFileIndex {
         }
 
         private void buildIndex() throws IOException {
+            // 读取zipDir数组中前两个字节保存的fle header数量
             int entryCount = get2ByteLittleEndian(zipDir, 0);
 
             // Add each of the files
@@ -576,6 +594,8 @@ public class ZipFileIndex {
                 ArrayList<Entry> entryList = new ArrayList<Entry>();
                 int pos = 2;
                 for (int i = 0; i < entryCount; i++) {
+                    // 调用readEntry()方法从zipDir中读取每一个具体的file header并将读取到的内容填充到entryList与
+                    // directories集合中
                     pos = readEntry(pos, entryList, directories);
                 }
 
@@ -601,17 +621,21 @@ public class ZipFileIndex {
             if (get4ByteLittleEndian(zipDir, pos) != 0x02014b50) {
                 throw new ZipException("cannot read zip file entry");
             }
-
+            // pos指向file header的signature的位置 (signature + 46 --> file name的位置)
             int dirStart = pos + 46;
             int fileStart = dirStart;
+            // signature + 46 + 文件名称长度 就是文件名称末尾的位置
             int fileEnd = fileStart + get2ByteLittleEndian(zipDir, pos + 28);
-
+            // 如果要读取的是ct.sym包中的内容, 在生成压缩包的时候, 会在包路径前增加META-INF/sym/tr.jar/的路径
+            // 用来标识特色性, 所以这里要过滤掉这个路径
+            // 过滤掉特殊的路径 "META-INF/sym/rt.jar/"
             if (zipFileIndex.symbolFilePrefixLength != 0 &&
                     ((fileEnd - fileStart) >= symbolFilePrefixLength)) {
                 dirStart += zipFileIndex.symbolFilePrefixLength;
                fileStart += zipFileIndex.symbolFilePrefixLength;
             }
             // Force any '\' to '/'. Keep the position of the last separator.
+            // 将字符 '\\' 替换为 '/' 并使用fileStart保存最后一个分隔符后的起始位置: (即不含目录名称的文件名称)
             for (int index = fileStart; index < fileEnd; index++) {
                 byte nextByte = zipDir[index];
                 if (nextByte == (byte)'\\') {
@@ -629,6 +653,8 @@ public class ZipFileIndex {
                 int index = lastLen - 1;
                 while (zipDir[lastStart + index] == zipDir[dirStart + index]) {
                     if (index == 0) {
+                        // 当将lastDir的值赋给directory的时候, 表示这次与上次读取到同一个目录
+                        // 直接重用上次为此目录建立的RelativeDirectory对象即可
                         directory = lastDir;
                         break;
                     }
@@ -650,20 +676,28 @@ public class ZipFileIndex {
                 while (directories.get(tempDirectory) == null) {
                     directories.put(tempDirectory, new DirectoryEntry(tempDirectory, zipFileIndex));
                     if (tempDirectory.path.indexOf("/") == tempDirectory.path.length() - 1)
+                        // 读取到压缩包中的一级目录, 则已经将RelativeDirectory对象保存到了ZipFileIndex类中的relativeDirectoryCache集合中了
+                        // 下次可以直接重用
                         break;
                     else {
                         // use shared RelativeDirectory objects for parent dirs
+                        // 假设读取压缩包的多级目录, 则应该为父目录也创建一个RelativeDirectory对象
+                        // 并将对象保存到zipFileIndex类中的relativeDirectoryCache集合中
+                        // 这样有相同父目录的多级目录就可以共享同一个RelativeDirectory对象了
                         tempDirectory = getRelativeDirectory(tempDirectory.dirname().getPath());
                     }
                 }
             }
             else {
+                // directory不为空的时候, 说明将lastDir赋值给了directory, 直接重用上次的RelativeDirectory对象即可
                 if (directories.get(directory) == null) {
                     directories.put(directory, new DirectoryEntry(directory, zipFileIndex));
                 }
             }
 
             // For each dir create also a file
+            // 如果 fileStart != fileEnd, 说明读取的是一个文件, 创建Entry对象对象并从zipDir数组中按file header格式读取文件相关信息
+            // 最后将创建好的Entry添加到EntryList列表中
             if (fileStart != fileEnd) {
                 Entry entry = new Entry(directory,
                         new String(zipDir, fileStart, fileEnd - fileStart, "UTF-8"));
@@ -674,7 +708,8 @@ public class ZipFileIndex {
                 entry.offset = get4ByteLittleEndian(zipDir, pos + 42);
                 entryList.add(entry);
             }
-
+            // 返回读取下一个file header的起始地址
+            // pos + 46 是当前文件名称的起始地址 pos + 28 读取的是文件名称长度 pos + 30 是 extra field length, pos + 32是 file comment length
             return pos + 46 +
                     get2ByteLittleEndian(zipDir, pos + 28) +
                     get2ByteLittleEndian(zipDir, pos + 30) +
@@ -1048,12 +1083,14 @@ public class ZipFileIndex {
 
     private RelativeDirectory getRelativeDirectory(String path) {
         RelativeDirectory rd;
+        // 通过软引用来尽可能缓存已经创建好的RelativeDirectory对象
         SoftReference<RelativeDirectory> ref = relativeDirectoryCache.get(path);
         if (ref != null) {
             rd = ref.get();
             if (rd != null)
                 return rd;
         }
+        // 如果无法从relativeDirectoryCache成员变量中获取缓存的对象, 就创建一个新的对象并保存到relativeDirectoryCache中
         rd = new RelativeDirectory(path);
         relativeDirectoryCache.put(path, new SoftReference<RelativeDirectory>(rd));
         return rd;

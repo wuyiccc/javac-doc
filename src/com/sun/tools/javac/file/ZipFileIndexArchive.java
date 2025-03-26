@@ -52,7 +52,7 @@ import com.sun.tools.javac.util.List;
  * deletion without notice.</b>
  */
 public class ZipFileIndexArchive implements Archive {
-
+    // 保存具体的压缩包, 每个压缩包都是一个ZipFileIndex对象
     private final ZipFileIndex zfIndex;
     private JavacFileManager fileManager;
 
@@ -65,11 +65,11 @@ public class ZipFileIndexArchive implements Archive {
     public boolean contains(RelativePath name) {
         return zfIndex.contains(name);
     }
-
+    // 通过相对路径subdirectory查找所有的文件, 以列表的形式返回所有的文件的名称
     public List<String> getFiles(RelativeDirectory subdirectory) {
         return zfIndex.getFiles(subdirectory);
     }
-
+    // 通过相对路径subdirectory查找名称为file的文件, 这里其实就是一个ZipFileIndexFileObject对象
     public JavaFileObject getFileObject(RelativeDirectory subdirectory, String file) {
         RelativeFile fullZipFileName = new RelativeFile(subdirectory, file);
         ZipFileIndex.Entry entry = zfIndex.getZipIndexEntry(fullZipFileName);
