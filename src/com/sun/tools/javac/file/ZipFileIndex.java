@@ -205,9 +205,6 @@ public class ZipFileIndex {
 
     private void openFile() throws FileNotFoundException {
         if (zipRandomFile == null && zipFile != null) {
-            if (zipFile.getAbsolutePath().equals("/root/work/javac-doc/lib/mysql-binlog-connector-java-0.25.3.jar")) {
-                System.out.println("yes amd");
-            }
             zipRandomFile = new RandomAccessFile(zipFile, "r");
         }
     }
@@ -261,7 +258,11 @@ public class ZipFileIndex {
             checkIndex();
 
             DirectoryEntry de = directories.get(path);
+            if (zipFile.getAbsolutePath().equals("/root/work/javac-doc/lib/mysql-binlog-connector-java-0.25.3.jar")) {
+                System.out.println("yes amd");
+            }
             com.sun.tools.javac.util.List<String> ret = de == null ? null : de.getFiles();
+
 
             if (ret == null) {
                 return com.sun.tools.javac.util.List.<String>nil();
@@ -763,6 +764,7 @@ public class ZipFileIndex {
 
         private com.sun.tools.javac.util.List<String> getFiles() {
             if (!filesInited) {
+                // 将ZipFileIndex中处于当前DirectoryEntry下的entries放入到DirectoryEntry下面的自己独有的entries中
                 initEntries();
                 for (Entry e : entries) {
                     if (!e.isDir) {
