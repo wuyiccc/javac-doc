@@ -365,9 +365,11 @@ public class Paths {
     private Path computeBootClassPath() {
         defaultBootClassPathRtJar = null;
         Path path = new Path();
-
+        // 获取-bootclasspath指定的zhi
         String bootclasspathOpt = options.get(BOOTCLASSPATH);
+        // 获取-endorseddirs指定的值
         String endorseddirsOpt = options.get(ENDORSEDDIRS);
+        // 获取-extdirs指定的值
         String extdirsOpt = options.get(EXTDIRS);
         String xbootclasspathPrependOpt = options.get(XBOOTCLASSPATH_PREPEND);
         String xbootclasspathAppendOpt = options.get(XBOOTCLASSPATH_APPEND);
@@ -377,12 +379,14 @@ public class Paths {
         if (endorseddirsOpt != null)
             path.addDirectories(endorseddirsOpt);
         else
+            // 当endorseddirsOpt为空的时候, 获取系统属性java.endorsed.dirs所指定的目录路径
             path.addDirectories(System.getProperty("java.endorsed.dirs"), false);
 
         if (bootclasspathOpt != null) {
             path.addFiles(bootclasspathOpt);
         } else {
             // Standard system classes for this compiler's release.
+            // 当bootclasspathOpt为空的时候, 获取系统属性sun.boot.class.pat的值
             String files = System.getProperty("sun.boot.class.path");
             path.addFiles(files, false);
             File rt_jar = new File("rt.jar");
@@ -411,21 +415,27 @@ public class Paths {
     }
 
     private Path computeUserClassPath() {
+        // 获取-classpath指定的路径
         String cp = options.get(CLASSPATH);
 
         // CLASSPATH environment variable when run from `javac'.
+        // cp为空的时候, 获取系统属性env.class.path所指定的目录路径
         if (cp == null) cp = System.getProperty("env.class.path");
 
         // If invoked via a java VM (not the javac launcher), use the
         // platform class path
+        // cp为空且系统属性application.home为空的时候, 获取系统属性java.class.path所指定的目录路径
         if (cp == null && System.getProperty("application.home") == null)
             cp = System.getProperty("java.class.path");
 
         // Default to current working directory.
+        // cp为空的时候, 默认为当前的工作目录
         if (cp == null) cp = ".";
 
         return new Path()
+        // 仅在classpath下搜索用户的jar包
             .expandJarClassPaths(true)        // Only search user jars for Class-Paths
+           // path默认的路径为当前的工作目录
             .emptyPathDefault(new File("."))  // Empty path elt ==> current directory
             .addFiles(cp);
     }
