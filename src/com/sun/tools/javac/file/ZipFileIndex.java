@@ -258,9 +258,6 @@ public class ZipFileIndex {
             checkIndex();
 
             DirectoryEntry de = directories.get(path);
-            if (zipFile.getAbsolutePath().equals("/root/work/javac-doc/lib/mysql-binlog-connector-java-0.25.3.jar")) {
-                System.out.println("yes amd");
-            }
             com.sun.tools.javac.util.List<String> ret = de == null ? null : de.getFiles();
 
 
