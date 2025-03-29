@@ -429,8 +429,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      *                         Defined only if option -Xjcov is set.
      */
     public static class JCCompilationUnit extends JCTree implements CompilationUnitTree {
+        // 保存多个包注解
         public List<JCAnnotation> packageAnnotations;
+        // 保存包声明
         public JCExpression pid;
+        // 保存导入声明以及类型声明, 在defs中的类型一定是顶层类和顶层接口, 也就是非嵌套类
         public List<JCTree> defs;
         public JavaFileObject sourcefile;
         public PackageSymbol packge;
@@ -503,7 +506,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * @param qualid    The imported class(es).
      */
     public static class JCImport extends JCTree implements ImportTree {
+        // 表示是否是静态声明导入
         public boolean staticImport;
+        // 保存具体的声明内容
         public JCTree qualid;
         protected JCImport(JCTree qualid, boolean importStatic) {
             this.qualid = qualid;
@@ -564,11 +569,14 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * @param sym the symbol
      */
     public static class JCClassDecl extends JCStatement implements ClassTree {
+        // 区分接口和类, 同时还能保存类或接口修饰符
         public JCModifiers mods;
         public Name name;
+        // 保存类型上声明的多个类型参数
         public List<JCTypeParameter> typarams;
         public JCExpression extending;
         public List<JCExpression> implementing;
+        // 保存了类内部的一些成员, 例如成员变量和方法等
         public List<JCTree> defs;
         public ClassSymbol sym;
         protected JCClassDecl(JCModifiers mods,
@@ -704,10 +712,13 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * @param init variables initial value
      * @param sym symbol
      */
+     // 成员变量/局部变量
     public static class JCVariableDecl extends JCStatement implements VariableTree {
         public JCModifiers mods;
         public Name name;
+        // 保存变量的声明类型
         public JCExpression vartype;
+        // 保存变量的初始化部分
         public JCExpression init;
         public VarSymbol sym;
         protected JCVariableDecl(JCModifiers mods,
@@ -1720,6 +1731,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * @param value value representation
      */
     public static class JCLiteral extends JCExpression implements LiteralTree {
+        /**
+        * {@link com.sun.tools.javac.code.TypeTags}
+        * */
         public int typetag;
         public Object value;
         protected JCLiteral(int typetag, Object value) {
@@ -1914,7 +1928,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * @param bounds bounds
      */
     public static class JCTypeParameter extends JCTree implements TypeParameterTree {
+        // 保存类型参数中类型变量的名称
         public Name name;
+        // 保存类型变量的上限
         public List<JCExpression> bounds;
         protected JCTypeParameter(Name name, List<JCExpression> bounds) {
             this.name = name;
@@ -2017,9 +2033,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             return ANNOTATION;
         }
     }
-
+    // 表示修饰符, public, abstract, native
     public static class JCModifiers extends JCTree implements com.sun.source.tree.ModifiersTree {
+        // 保存修饰符， 通64个不同的位来表示
         public long flags;
+        // 保存注解信息
         public List<JCAnnotation> annotations;
         protected JCModifiers(long flags, List<JCAnnotation> annotations) {
             this.flags = flags;
