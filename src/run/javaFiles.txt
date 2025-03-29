@@ -1,1 +1,1 @@
-/root/work/javac-doc/src/test/TestJavac.java
+/root/work/javac-doc/test/TestJavac.java

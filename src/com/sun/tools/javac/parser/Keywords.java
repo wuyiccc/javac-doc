@@ -57,6 +57,8 @@ public class Keywords {
         context.put(keywordsKey, this);
         names = Names.instance(context);
 
+        // 循环所有的token对象, 如果name的值不为空, 则调用enterKeyword方法 建立 token对象到name对象的映射,
+        // 如果name值为空, 将tokenName数组中调用t.ordinal()方法获取的下标处的值设置为null
         for (Token t : Token.values()) {
             if (t.name != null)
                 enterKeyword(t.name, t);
@@ -64,7 +66,9 @@ public class Keywords {
                 tokenName[t.ordinal()] = null;
         }
 
+        // 初始化key数组
         key = new Token[maxKey+1];
+        // 先默认初始化为identifier
         for (int i = 0; i <= maxKey; i++) key[i] = IDENTIFIER;
         for (Token t : Token.values()) {
             if (t.name != null)
@@ -80,6 +84,8 @@ public class Keywords {
     /**
      * Keyword array. Maps name indices to Token.
      */
+    // 由于一般都是通过具体的NameImpl找到对应的Token对象, 所以我们这里还需要建立Name->token对象的映射关系
+    // 这里index存储的肯定是不连续的
     private final Token[] key;
 
     /**  The number of the last entered keyword.
@@ -88,11 +94,14 @@ public class Keywords {
 
     /** The names of all tokens.
      */
+     // 根据下标(token枚举序号)保存了token枚举中各个对象到Name对象的映射关系
+     // 例如 Name[0]=null, Name[3]=NameImpl("abstract")
     private Name[] tokenName = new Name[Token.values().length];
 
     private void enterKeyword(String s, Token token) {
         Name n = names.fromString(s);
         tokenName[token.ordinal()] = n;
+        // 这里保存的是index的最大值(是字符数组在bytes中的下标)
         if (n.getIndex() > maxKey) maxKey = n.getIndex();
     }
 }

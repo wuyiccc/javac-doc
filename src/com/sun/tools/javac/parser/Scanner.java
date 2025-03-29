@@ -183,6 +183,7 @@ public class Scanner implements Lexer {
         }
         buf = input;
         buflen = inputLength;
+        // 表示已经没有可读取的字符了
         buf[buflen] = EOI;
         bp = -1;
         scanChar();
@@ -285,7 +286,7 @@ public class Scanner implements Lexer {
     /** Read next character in character or string literal and copy into sbuf.
      */
     private void scanLitChar() {
-        if (ch == '\\') {
+        if (ch == '\\') {// 处理转义字符
             if (buf[bp+1] == '\\' && unicodeConversionBp != bp) {
                 bp++;
                 putChar('\\');
@@ -296,6 +297,7 @@ public class Scanner implements Lexer {
                 case '0': case '1': case '2': case '3':
                 case '4': case '5': case '6': case '7':
                     char leadch = ch;
+                    // 将8进制表示的数转换为10进制表示, 然后强转位char类型调用putChar方法
                     int oct = digit(8);
                     scanChar();
                     if ('0' <= ch && ch <= '7') {
@@ -737,6 +739,7 @@ public class Scanner implements Lexer {
 
         try {
             prevEndPos = endPos;
+            // 每调用一次nextToken, sp就被初始化为0, 指向sbuf中下一个可用的位置
             sp = 0;
 
             while (true) {
@@ -749,6 +752,7 @@ public class Scanner implements Lexer {
                         scanChar();
                     } while (ch == ' ' || ch == '\t' || ch == FF);
                     endPos = bp;
+                    // 将空格,水平制表符和换页符当做空白字符来处理
                     processWhiteSpace();
                     break;
                 case LF: // (Spec 3.4)
@@ -777,11 +781,14 @@ public class Scanner implements Lexer {
                 case 'u': case 'v': case 'w': case 'x': case 'y':
                 case 'z':
                 case '$': case '_':
+                    // 处理标识符
                     scanIdent();
                     return;
                 case '0':
+                    // 处理数字
                     scanChar();
                     if (ch == 'x' || ch == 'X') {
+                        // 处理16进制
                         scanChar();
                         skipIllegalUnderscores();
                         if (ch == '.') {
@@ -792,6 +799,7 @@ public class Scanner implements Lexer {
                             scanNumber(16);
                         }
                     } else if (ch == 'b' || ch == 'B') {
+                        // 处理二进制
                         if (!allowBinaryLiterals) {
                             lexError("unsupported.binary.lit", source.name);
                             allowBinaryLiterals = true;
@@ -804,6 +812,7 @@ public class Scanner implements Lexer {
                             scanNumber(2);
                         }
                     } else {
+                        // 处理八进制
                         putChar('0');
                         if (ch == '_') {
                             int savePos = bp;
@@ -819,14 +828,18 @@ public class Scanner implements Lexer {
                     return;
                 case '1': case '2': case '3': case '4':
                 case '5': case '6': case '7': case '8': case '9':
+                    // 处理10进制
                     scanNumber(10);
                     return;
                 case '.':
+                    // 以 . 开头可能是小数, 也有可能是方法的可变参数, 或者只是一个单纯的分割符
                     scanChar();
                     if ('0' <= ch && ch <= '9') {
                         putChar('.');
+                        // 处理十进制中的小数以及后缀部分
                         scanFractionAndSuffix();
                     } else if (ch == '.') {
+                        // 处理变长参数
                         putChar('.'); putChar('.');
                         scanChar();
                         if (ch == '.') {
@@ -858,7 +871,7 @@ public class Scanner implements Lexer {
                     scanChar(); token = RBRACE; return;
                 case '/':
                     scanChar();
-                    if (ch == '/') {
+                    if (ch == '/') { // 单行注释
                         do {
                             scanCommentChar();
                         } while (ch != CR && ch != LF && bp < buflen);
@@ -867,7 +880,7 @@ public class Scanner implements Lexer {
                             processComment(CommentStyle.LINE);
                         }
                         break;
-                    } else if (ch == '*') {
+                    } else if (ch == '*') { // 多行注释或文档注释
                         scanChar();
                         CommentStyle style;
                         if (ch == '*') {
@@ -893,22 +906,23 @@ public class Scanner implements Lexer {
                             lexError("unclosed.comment");
                             return;
                         }
-                    } else if (ch == '=') {
+                    } else if (ch == '=') { // /=
                         name = names.slashequals;
                         token = SLASHEQ;
                         scanChar();
-                    } else {
+                    } else { // 除法运算符 /
                         name = names.slash;
                         token = SLASH;
                     }
                     return;
-                case '\'':
+                case '\'': // 单引号作为首字符, 通常表示字符常量
                     scanChar();
                     if (ch == '\'') {
                         lexError("empty.char.lit");
                     } else {
                         if (ch == CR || ch == LF)
                             lexError(pos, "illegal.line.end.in.char.lit");
+                        // 扫描字符常量
                         scanLitChar();
                         if (ch == '\'') {
                             scanChar();
@@ -921,6 +935,7 @@ public class Scanner implements Lexer {
                 case '\"':
                     scanChar();
                     while (ch != '\"' && ch != CR && ch != LF && bp < buflen)
+                        // 当ch不为双引号, 不为回车换行, 且有待处理的字符的时, 调用scanLitChar()方法扫描字符串常量
                         scanLitChar();
                     if (ch == '\"') {
                         token = STRINGLITERAL;
@@ -930,22 +945,22 @@ public class Scanner implements Lexer {
                     }
                     return;
                 default:
-                    if (isSpecial(ch)) {
+                    if (isSpecial(ch)) { // ch是标识符号或标识符号的首字符
                         scanOperator();
                     } else {
                         boolean isJavaIdentifierStart;
-                        if (ch < '\u0080') {
+                        if (ch < '\u0080') { // ch是ascii编码中的一个字符
                             // all ASCII range chars already handled, above
                             isJavaIdentifierStart = false;
                         } else {
-                            char high = scanSurrogates();
+                            char high = scanSurrogates(); // 获取高代理项
                             if (high != 0) {
                                 if (sp == sbuf.length) {
                                     putChar(high);
                                 } else {
                                     sbuf[sp++] = high;
                                 }
-
+                                // 判断通过高代理项和低代理项表示的字符是否为合法
                                 isJavaIdentifierStart = Character.isJavaIdentifierStart(
                                     Character.toCodePoint(high, ch));
                             } else {

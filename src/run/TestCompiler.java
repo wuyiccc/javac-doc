@@ -27,6 +27,9 @@ public class TestCompiler {
                 "@/root/work/javac-doc/src/run/javaFiles.txt"
         });
 
+        double a = .3;
+
+
         System.out.println("result code:" + result);
     }
 

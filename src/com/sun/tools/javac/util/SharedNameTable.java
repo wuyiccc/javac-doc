@@ -94,20 +94,24 @@ public class SharedNameTable extends Name.Table {
     public Name fromChars(char[] cs, int start, int len) {
         int nc = this.nc;
         byte[] bytes = this.bytes;
+        // 扩容操作
         while (nc + len * 3 >= bytes.length) {
             //          System.err.println("doubling name buffer of length " + names.length + " to fit " + len + " chars");//DEBUG
             byte[] newnames = new byte[bytes.length * 2];
             System.arraycopy(bytes, 0, newnames, 0, bytes.length);
             bytes = this.bytes = newnames;
         }
+        // 计算字符数组要存储到字节数组时所需要占用的字节长度
         int nbytes = Convert.chars2utf(cs, start, bytes, nc, len) - nc;
         int h = hashValue(bytes, nc, nbytes) & hashMask;
         NameImpl n = hashes[h];
+        // 如果产生hash冲突, 则使用next将冲突的元素连接起来
         while (n != null &&
                 (n.getByteLength() != nbytes ||
                 !equals(bytes, n.index, bytes, nc, nbytes))) {
             n = n.next;
         }
+        // 创建新的NameImpl对象
         if (n == null) {
             n = new NameImpl(this);
             n.index = nc;
