@@ -1,12 +1,8 @@
 package test;
 
-public class TestJavac {
+public @interface TestJavac {
 
-    @Deprecated
-    public static void main(String[] args) {
+    default int getValue() default 10;
 
-        char 𠮷 = '\61';
-
-    }
 
 }
