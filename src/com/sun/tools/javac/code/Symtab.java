@@ -556,6 +556,7 @@ public class Symtab {
         nullcheck = enterUnop("<*nullchk*>", objectType, objectType, nullchk);
 
         // string concatenation
+        // 运算符重载
         enterBinop("+", stringType, objectType, stringType, string_add);
         enterBinop("+", objectType, stringType, stringType, string_add);
         enterBinop("+", stringType, stringType, stringType, string_add);

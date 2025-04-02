@@ -507,10 +507,14 @@ public class JavacParser implements Parser {
      * Qualident = Ident { DOT Ident }
      */
     public JCExpression qualident() {
+        // 解析为JCIdent语法节点
         JCExpression t = toP(F.at(S.pos()).Ident(ident()));
+        // 如果package定义了多级目录, 比如 package test.run; 而不是 package test;
+        //那么语法解析器就会通过循环迭代的方式将其解析为嵌套的JCFieldAccess语法节点
         while (S.token() == DOT) {
             int pos = S.pos();
             S.nextToken();
+            // 解析为JCFieldAccess语法节点
             t = toP(F.at(pos).Select(t, ident()));
         }
         return t;
@@ -2460,9 +2464,10 @@ public class JavacParser implements Parser {
         String dc = S.docComment();
         JCModifiers mods = null;
         List<JCAnnotation> packageAnnotations = List.nil();
+        // 解析访问修饰符
         if (S.token() == MONKEYS_AT) // 解析包上的注解
             mods = modifiersOpt(); // 读取注解
-
+        // 解析package关键字
         if (S.token() == PACKAGE) { // 解析包
             if (mods != null) {
                 checkNoMods(mods.flags);
@@ -2482,10 +2487,12 @@ public class JavacParser implements Parser {
                 if (S.token() == EOF)
                     break;
             }
+            // 解析import关键字
             if (checkForImports && mods == null && S.token() == IMPORT) {
                 // 解析导入声明
                 defs.append(importDeclaration());
             } else {
+                // 解析主体信息并转换为语法树
                 // 解析类型声明
                 JCTree def = typeDeclaration(mods);
                 if (keepDocComments && dc != null && docComments.get(def) == dc) {
@@ -2526,10 +2533,12 @@ public class JavacParser implements Parser {
             importStatic = true;
             S.nextToken();
         }
+        // 根据name对象解析出一个JCIdent语法节点
         JCExpression pid = toP(F.at(S.pos()).Ident(ident()));
         do {
             int pos1 = S.pos();
             accept(DOT);
+            // 根据name对象解析出一个JCFieldAccess语法节点
             if (S.token() == STAR) {
                 pid = to(F.at(pos1).Select(pid, names.asterisk));
                 S.nextToken();
@@ -2539,6 +2548,7 @@ public class JavacParser implements Parser {
             }
         } while (S.token() == DOT);
         accept(SEMI);
+        // 将JCIdent和JCFieldAccess语法节点整合为一个JCImport语法树
         return toP(F.at(pos).Import(pid, importStatic));
     }
 
@@ -2565,13 +2575,19 @@ public class JavacParser implements Parser {
      * @param mods Any modifiers starting the class or interface declaration
      * @param dc   The documentation comment for the class, or null.
      */
+     // class, enum, interface都是解析为JCClassDecl语法树
     JCStatement classOrInterfaceOrEnumDeclaration(JCModifiers mods, String dc) {
+        // 匹配Token.CLASS
         if (S.token() == CLASS) {// 解析类
+            // 将类型解析为一颗JCClassDecl语法树
             return classDeclaration(mods, dc);
         } else if (S.token() == INTERFACE) {// 解析接口和注解(特殊的接口)
+            // 将接口类型解析为一颗JCClassDecl语法树
             return interfaceDeclaration(mods, dc);
         } else if (allowEnums) {
+            // 匹配Token.ENUM
             if (S.token() == ENUM) { // 解析枚举类
+                // 将枚举类型解析为一颗JCClassDecl语法树
                 return enumDeclaration(mods, dc);
             } else {
                 int pos = S.pos();
@@ -2586,9 +2602,11 @@ public class JavacParser implements Parser {
                         CLASS, INTERFACE, ENUM)));
             }
         } else {
+            // 匹配Token.ENUM
             if (S.token() == ENUM) {
                 error(S.pos(), "enums.not.supported.in.source", source.name);
                 allowEnums = true;
+                // 将枚举类型解析为一颗JCClassDecl语法树
                 return enumDeclaration(mods, dc);
             }
             int pos = S.pos();
@@ -2632,7 +2650,9 @@ public class JavacParser implements Parser {
             implementing = typeList();
         }
         // 解析类的body体
+        // 解析类中的所有成员信息, 并存储在集合中
         List<JCTree> defs = classOrInterfaceBody(name, false);
+        //将类中所有的成员信息整合为一颗JCClassDecl语法树
         JCClassDecl result = toP(F.at(pos).ClassDef(
                 mods, name, typarams, extending, implementing, defs));
         attach(result, dc);

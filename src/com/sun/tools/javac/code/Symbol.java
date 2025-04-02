@@ -526,6 +526,7 @@ public abstract class Symbol implements Element {
                 ((owner.kind & (VAR | MTH)) != 0
                  || (owner.kind == TYP && owner.type.tag == TYPEVAR)
                  )) return name;
+            // 当逻辑执行到这里的时候, owner值的类型一定为ClassSymbol或PackageSymbol
             Name prefix = owner.getQualifiedName();
             if (prefix == null || prefix == prefix.table.names.empty)
                 return name;
@@ -1334,6 +1335,8 @@ public abstract class Symbol implements Element {
 
     /** A class for predefined operators.
      */
+     // javac在操作符名称相同的形态下, 根据操作符两边的操作数类型来唯一确定一个OperatorSymbol
+     // 例如 3 + 1L, 会根据 '+', int, long 来唯一确定一个OperatorSymbol
     public static class OperatorSymbol extends MethodSymbol {
 
         public int opcode;

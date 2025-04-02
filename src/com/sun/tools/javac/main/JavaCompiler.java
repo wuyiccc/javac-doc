@@ -591,7 +591,9 @@ public class JavaCompiler implements ClassReader.SourceCompleter {
                 TaskEvent e = new TaskEvent(TaskEvent.Kind.PARSE, filename);
                 taskListener.started(e);
             }
+            // 创建JavacParse对象实例
             Parser parser = parserFactory.newParser(content, keepComments(), genEndPos, lineDebugInfo);
+            // 调用parseCompilationUnit执行词法解析
             tree = parser.parseCompilationUnit();
             if (verbose) {
                 log.printVerbose("parsing.done", Long.toString(elapsed(msec)));

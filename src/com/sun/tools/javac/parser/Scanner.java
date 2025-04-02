@@ -534,7 +534,9 @@ public class Scanner implements Lexer {
                 break;
             case '\u001A': // EOI is also a legal identifier part
                 if (bp >= buflen) {
+                    // 先将代码字符串转为Name, 然后根据事先准备好的映射关系将Name转为token
                     name = names.fromChars(sbuf, 0, sp);
+                    // name转token
                     token = keywords.key(name);
                     return;
                 }

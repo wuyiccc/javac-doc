@@ -397,6 +397,9 @@ public class Check {
      *    enclClass is the flat name of the enclosing class,
      *    classname is the simple name of the local class
      */
+     // 匿名类和本地类的flatname会在Enter类的visitClassDef()方法中更新
+     // 这个方法会调用localClassName方法从而得到flatname
+     // syntheticNameChar的值是'$'
     Name localClassName(ClassSymbol c) {
         for (int i=1; ; i++) {
             Name flatname = names.

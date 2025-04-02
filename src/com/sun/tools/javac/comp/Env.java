@@ -45,26 +45,32 @@ public class Env<A> implements Iterable<Env<A>> {
 
     /** The next enclosing environment.
      */
+    // 指向了父节点对应的env对象
     public Env<A> next;
 
     /** The environment enclosing the current class.
      */
+    // 指向当前节点所归属的JCClassDecl类型节点的父节点
     public Env<A> outer;
 
     /** The tree with which this environment is associated.
      */
+     // 保存了当前节点的父节点
     public JCTree tree;
 
     /** The enclosing toplevel tree.
      */
+     // 保存了当前节点所属的编译单元
     public JCTree.JCCompilationUnit toplevel;
 
     /** The next enclosing class definition.
      */
+    // 保存了当前节点所属的分析JCClassDecl类型的节点
     public JCTree.JCClassDecl enclClass;
 
     /** The next enclosing method definition.
      */
+    // 保存了当前节点所属的JCMethodDecl类型的节点
     public JCTree.JCMethodDecl enclMethod;
 
     /** A generic field for further information.

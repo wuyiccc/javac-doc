@@ -138,6 +138,7 @@ public class TreeMaker implements JCTree.Factory {
     }
 
     public JCImport Import(JCTree qualid, boolean importStatic) {
+        // 解析JCImport语法树
         JCImport tree = new JCImport(qualid, importStatic);
         tree.pos = pos;
         return tree;
@@ -150,6 +151,7 @@ public class TreeMaker implements JCTree.Factory {
                                 List<JCExpression> implementing,
                                 List<JCTree> defs)
     {
+        // 解析JClassDecl语法树
         JCClassDecl tree = new JCClassDecl(mods,
                                      name,
                                      typarams,
@@ -400,12 +402,14 @@ public class TreeMaker implements JCTree.Factory {
     }
 
     public JCFieldAccess Select(JCExpression selected, Name selector) {
+        // 根据name对象解析出嵌套JCFieldAccess语法节点
         JCFieldAccess tree = new JCFieldAccess(selected, selector, null);
         tree.pos = pos;
         return tree;
     }
 
     public JCIdent Ident(Name name) {
+        // 根据name对象解析出一个JCIdent语法节点
         JCIdent tree = new JCIdent(name, null);
         tree.pos = pos;
         return tree;

@@ -280,6 +280,7 @@ public class Names {
         table.dispose();
     }
 
+    // 从name到token的转换
     public Name fromChars(char[] cs, int start, int len) {
         return table.fromChars(cs, start, len);
     }
